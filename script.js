@@ -26,7 +26,7 @@ canvas.width = 300
 canvas.height = 300
 const ctx = canvas.getContext('2d')
 
-const tiempo = 10000
+const tiempo = 40000
 let interval = 0
 let tiempoInicio = null
 let tiempoReciente = 0
