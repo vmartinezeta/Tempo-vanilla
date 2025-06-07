@@ -4,6 +4,10 @@
     box-sizing: border-box;
 }
 
+body {
+    background: rgba(0,0,0,.95);
+}
+
 ul {
     list-style: none;
     margin-top: 20px;
@@ -22,7 +26,7 @@ ul {
 }
 
 .tempo {
-    background: #eee;
+    background: #fff;
     width: 100%;
     height: 100%;
     padding: 10px;

@@ -1,21 +1,29 @@
 // Autor: Víctor Martínez
+import { getMp3Sound, playSound, stopSound } from "./audio.js"
+import { createContext, context } from "./context.js"
+import { Temporizador } from "./Temporizador.js"
+
+
+
+
 const $ = selector => {
     return document.querySelector(selector)
 }
 
+
 const crearBoton = (name, callback, ctx) => {
     const boton = $(name)
-
+    
     boton.addEventListener("click", () => callback.call(ctx))
-
+    
     boton.activar = function () {
         this.style.display = "flex"
     }
-
+    
     boton.desactivar = function () {
         this.style.display = "none"
     }
-
+    
     return boton
 }
 
@@ -25,12 +33,23 @@ const canvas = $("canvas")
 canvas.width = 300
 canvas.height = 300
 const ctx = canvas.getContext('2d')
+const tiempo = 2000
 
-const tiempo = 40000
-let interval = 0
-let tiempoInicio = null
-let tiempoReciente = 0
 
+const tempo = new Temporizador(tiempo, async ({time, running}) => {
+    const resto = tiempo - time
+    const angle = 2 * (resto / tiempo) * Math.PI
+
+    if (!running) {
+        drawBorder(150, 150, 100, 0)
+        reset()
+        createContext()
+        playSound(await getMp3Sound("./audio/alarm.mp3"))
+        return
+    }
+    drawBorder(150, 150, 100, angle)
+    $pantalla.textContent = formatearTiempo(resto)
+})
 
 
 function drawBorder(x, y, radio, angle) {
@@ -52,12 +71,14 @@ function drawBorder(x, y, radio, angle) {
     ctx.closePath()
 }
 
+
 const rellenarDecena = (numero, defaultValue="0") => {
     if (numero < 10) {
         return defaultValue+numero
     }
     return numero
 }
+
 
 const formatearTiempo = milisegundos => {
     let horas = parseInt(milisegundos / 1000 / 60 / 60)
@@ -68,7 +89,7 @@ const formatearTiempo = milisegundos => {
         minutos = 0
     }
     milisegundos -= minutos * 60 * 1000
-    let segundos = (milisegundos / 1000)
+    let segundos = milisegundos / 1000
     if (segundos > 59) {
         minutos ++
         segundos = 0
@@ -76,49 +97,39 @@ const formatearTiempo = milisegundos => {
     return `${rellenarDecena(horas)}:${rellenarDecena(minutos)}:${rellenarDecena(segundos.toFixed(0))}`
 }
 
-const iniciar = () => {
-    const ahora = new Date()
-    tiempoInicio = new Date(ahora.getTime() - tiempoReciente)
-    clearInterval(interval)
-    interval = setInterval(actualizarTempo, 100)
 
+const iniciar = () => {
+    if (context && context.state === "running") {
+        stopSound()
+    }
+    tempo.start()
     btnIniciar.desactivar()
     btnPausar.activar()
 }
 
+
 const pausar = () => {
-    tiempoReciente = new Date() - tiempoInicio.getTime()
-    clearInterval(interval)
+    tempo.pause()
     btnIniciar.activar()
     btnPausar.desactivar()
 }
 
-const actualizarTempo = () => {
-    const ahora = new Date()
-    const diferencia = ahora.getTime() - tiempoInicio.getTime()
-    const resto = tiempo - diferencia
-    if (resto < 0) {
-        reset()
-        drawBorder(150, 150, 100, 0)
-        return
-    }
-    const angle = 2 * (resto / tiempo) * Math.PI
-    drawBorder(150, 150, 100, angle)
-    $pantalla.textContent = formatearTiempo(resto)
-}
 
 const reset = () => {
-    clearInterval(interval)
-    tiempoReciente = 0
+    if (context && context.state === "running") {
+        stopSound()
+    }
+    tempo.reset()
     $pantalla.textContent = "00:00:00"
     drawBorder(150, 150, 100, 0)
     btnPausar.desactivar()
     btnIniciar.activar()
 }
 
+
 const btnIniciar = crearBoton("#btnIniciar", iniciar, this)
 const btnPausar = crearBoton("#btnPausar", pausar, this)
-const btnReset = crearBoton("#btnReiniciar", reset, this)
+crearBoton("#btnReiniciar", reset, this)
 
 
 reset()
