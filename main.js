@@ -1,9 +1,7 @@
 // Autor: Víctor Martínez
-import { getMp3Sound, playSound, stopSound } from "./audio.js"
-import { createContext, context } from "./context.js"
-import { Temporizador } from "./Temporizador.js"
-
-
+import { Duracion } from "./classes/Duracion.js"
+import { SoundLocal } from "./classes/SoundLocal.js"
+import { Temporizador } from "./classes/Temporizador.js"
 
 
 const $ = selector => {
@@ -13,42 +11,37 @@ const $ = selector => {
 
 const crearBoton = (name, callback, ctx) => {
     const boton = $(name)
-    
+
     boton.addEventListener("click", () => callback.call(ctx))
-    
+
     boton.activar = function () {
         this.style.display = "flex"
     }
-    
+
     boton.desactivar = function () {
         this.style.display = "none"
     }
-    
+
     return boton
 }
 
 
-const $pantalla = $("#pantalla")
+const pantalla = $("#pantalla")
 const canvas = $("canvas")
 canvas.width = 300
 canvas.height = 300
 const ctx = canvas.getContext('2d')
-const tiempo = 2000
+const soundLocal = new SoundLocal("./audio/alarm.mp3")
 
 
-const tempo = new Temporizador(tiempo, async ({time, running}) => {
-    const resto = tiempo - time
-    const angle = 2 * (resto / tiempo) * Math.PI
-
+const tempo = new Temporizador(new Duracion("2 s"), async ({ resto, total, running }) => {
+    const angle = 2 * (resto / total) * Math.PI
     if (!running) {
-        drawBorder(150, 150, 100, 0)
         reset()
-        createContext()
-        playSound(await getMp3Sound("./audio/alarm.mp3"))
-        return
+        soundLocal.play()
     }
     drawBorder(150, 150, 100, angle)
-    $pantalla.textContent = formatearTiempo(resto)
+    pantalla.textContent = formatearTiempo(resto)
 })
 
 
@@ -56,7 +49,7 @@ function drawBorder(x, y, radio, angle) {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     ctx.beginPath()
-    ctx.arc(x, y, radio, 0, 2*Math.PI)
+    ctx.arc(x, y, radio, 0, 2 * Math.PI)
     ctx.strokeStyle = "tomato"
     ctx.lineWidth = 14
     ctx.stroke()
@@ -72,9 +65,9 @@ function drawBorder(x, y, radio, angle) {
 }
 
 
-const rellenarDecena = (numero, defaultValue="0") => {
+const rellenarDecena = (numero, defaultValue = "0") => {
     if (numero < 10) {
-        return defaultValue+numero
+        return defaultValue + numero
     }
     return numero
 }
@@ -85,13 +78,13 @@ const formatearTiempo = milisegundos => {
     milisegundos -= horas * 60 * 60 * 1000
     let minutos = parseInt(milisegundos / 1000 / 60)
     if (minutos > 59) {
-        horas ++
+        horas++
         minutos = 0
     }
     milisegundos -= minutos * 60 * 1000
     let segundos = milisegundos / 1000
     if (segundos > 59) {
-        minutos ++
+        minutos++
         segundos = 0
     }
     return `${rellenarDecena(horas)}:${rellenarDecena(minutos)}:${rellenarDecena(segundos.toFixed(0))}`
@@ -99,8 +92,8 @@ const formatearTiempo = milisegundos => {
 
 
 const iniciar = () => {
-    if (context && context.state === "running") {
-        stopSound()
+    if (soundLocal.isPlaying()) {
+        soundLocal.stop()
     }
     tempo.start()
     btnIniciar.desactivar()
@@ -116,11 +109,11 @@ const pausar = () => {
 
 
 const reset = () => {
-    if (context && context.state === "running") {
-        stopSound()
+    if (soundLocal.isPlaying()) {
+        soundLocal.stop()
     }
     tempo.reset()
-    $pantalla.textContent = "00:00:00"
+    pantalla.textContent = "00:00:00"
     drawBorder(150, 150, 100, 0)
     btnPausar.desactivar()
     btnIniciar.activar()
